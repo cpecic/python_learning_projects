@@ -1,0 +1,36 @@
+from pytube import YouTube
+from sys import argv
+
+
+videos = argv[1]
+
+ 
+
+with open(videos, 'r') as vf:
+
+    vf = vf.readlines()
+
+    for line in vf:
+
+        line = line.replace('\n', ' ').split()
+
+        ytvid = line[0]
+
+        yt = YouTube(ytvid)
+
+        try: 
+
+            print("Title: ", yt.title)
+
+
+            print("Views: ", yt.views)
+
+
+            yd = yt.streams.get_highest_resolution()
+
+
+            yd.download('./ytfolder')
+
+        except:
+
+            pass
