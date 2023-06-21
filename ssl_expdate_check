@@ -1,0 +1,32 @@
+import ssl
+import socket
+import datetime
+import sys
+
+ssllist = sys.argv[1]
+
+with open(ssllist, 'r') as sx:
+    sx = sx.readlines()
+    for line in sx:
+        line = line.replace('\n', ' ').split()
+        hostname = line[0]
+        try:
+            def get_ssl_certificate_expiration(hostname, port):
+                # Create a socket and wrap it with SSL context
+                context = ssl.create_default_context()
+                with socket.create_connection((hostname, port)) as sock:
+                    with context.wrap_socket(sock, server_hostname=hostname) as ssl_sock:
+                        # Get the SSL certificate
+                        certificate = ssl_sock.getpeercert()
+
+                        # Extract the expiration date from the certificate
+                        not_after = certificate['notAfter']
+                        expiration_date = datetime.datetime.strptime(not_after, "%b %d %H:%M:%S %Y %Z")
+
+                        return expiration_date
+
+            port = 443  # Use the appropriate port for SSL connections
+            expiration_date = get_ssl_certificate_expiration(hostname, port)
+            print(f"The SSL certificate for {hostname} expires on {expiration_date}.")
+        except Exception as e:
+            print(f"An error occurred while checking the SSL certificate for {hostname}: {e}")
