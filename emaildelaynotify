@@ -1,0 +1,68 @@
+import imaplib
+import email
+from datetime import datetime, timedelta
+import smtplib
+from email.mime.text import MIMEText
+
+## Connect to the IMAP server
+mail = imaplib.IMAP4_SSL("netsol-imap-oxcs.hostingplatform.com")
+username = "notls@pecic.net"
+password = "password"
+mail.login(username, password)
+
+
+# Select the mailbox you want to fetch emails from
+mailbox = "INBOX"
+mail.select(mailbox)
+
+# Search for the latest email
+result, data = mail.search(None, "ALL")
+latest_email_id = data[0].split()[-1]  # Get the ID of the latest email
+
+# Fetch the email using the latest_email_id
+result, data = mail.fetch(latest_email_id, "(RFC822)")
+raw_email = data[0][1]
+
+# Parse the raw email content
+email_message = email.message_from_bytes(raw_email)
+email_date_str = email_message["Date"]
+
+# Convert the email date to a Python datetime object
+email_date = email.utils.parsedate_to_datetime(email_date_str)
+
+# Get the received time from the email header
+received_date_str = email_message["Received"].split(";")[-1].strip()
+received_date = email.utils.parsedate_to_datetime(received_date_str)
+
+# Calculate the delay between sent time and received time
+delay = received_date - email_date
+
+print("Sent Time:", email_date)
+print("Received Time:", received_date)
+print("Delay:", delay)
+
+# Check if the delay is over 3 minutes
+if delay > timedelta(minutes=3):
+    # Compose the email to be sent
+    subject = "Email Delay Alert"
+    body = f"The email was delayed by {delay.total_seconds() / 60:.2f} minutes."
+    recipient = "chrisp@web.com"
+    
+    msg = MIMEText(body)
+    msg["Subject"] = subject
+    msg["From"] = username
+    msg["To"] = recipient
+
+    # Connect to the SMTP server and send the email
+    smtp_server = "netsol-smtp-oxcs.hostingplatform.com"
+    smtp_port = 587
+    smtp_username = "notls@pecic.net"
+    smtp_password = "password"
+
+    with smtplib.SMTP(smtp_server, smtp_port) as server:
+        server.starttls()
+        server.login(smtp_username, smtp_password)
+        server.sendmail(smtp_username, recipient, msg.as_string())
+
+# Close the connection
+mail.logout()
